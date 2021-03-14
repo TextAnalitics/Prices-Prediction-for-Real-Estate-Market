@@ -17,8 +17,8 @@ library(tidyverse)    # data manipulation and visualization
 library(kernlab)      # SVM methodology
 library(e1071)        # SVM methodology
 library(RColorBrewer) # customized coloring of plots
-setwd('C:\\Users\\')
-student_data1 <- read.csv("C:\\Users\\Dataset.csv",
+setwd('C:\\Users\\RESEARCH\\')
+student_data1 <- read.csv("Dataset.csv",
          header = TRUE,        #are there column names in 1st row?
          sep = ",",            #what separates rows?
          strip.white = TRUE,   #strip out extra white space in strings.
@@ -39,7 +39,7 @@ student_data$mieszkania.na.sprzedaz.olx <- as.factor(student_data$mieszkania.na.
 student_data$domy.na.sprzedaz.olx <- as.factor(student_data$domy.na.sprzedaz.olx)
 student_data$dom.na.sprzedaz <- as.factor(student_data$dom.na.sprzedaz)
 student_data$domy.na.sprzedaÅ.  <- as.factor(student_data$domy.na.sprzedaÅ.)
-student_data$kredyt.na.dom <- as.factor(student_data$kredyt.na.dom)
+#student_data$kredyt.na.dom <- as.factor(student_data$kredyt.na.dom)
 
 dim(student_data)
 
@@ -92,7 +92,7 @@ cat(paste("Precision:\t", format(precision, digits=2), "\n",sep=" "))
 cat(paste("Recall:\t\t", format(recall, digits=2), "\n",sep=" "))
 cat(paste("F-measure:\t", format(f, digits=2), "\n",sep=" "))
 
-ctrl <- trainControl(method = "repeatedcv", repeats = 3)
+ctrl <- trainControl(method = "cv", repeats = 3)
 kNNFit2 <- train(HPI.categories~.,
                  data = student_data,
                  method = "knn",
@@ -102,6 +102,16 @@ kNNFit2 <- train(HPI.categories~.,
 print(kNNFit2)
 plot(kNNFit2)
 
+# load libraries
+library(caret)
+library(mlbench)
+# load the dataset
+# prepare resampling method
+control <- trainControl(method="cv", number=5)
+set.seed(7)
+fit <- train(HPI.categories~., data=student_data, method="glm", metric="Accuracy", trControl=control)
+# display results
+print(fit)
 
 #__________________________________________
 
@@ -114,7 +124,17 @@ metric <- "Accuracy"
 #Ensembles of Trees: Bagged CART, Random Forest
 
 #________________________________________
-seed=2009676
+#seed=678765689
+seed=9676
+# Run algorithms using k-fold cross validation
+control <- trainControl(method="cv", number=5)
+# Run algorithms using Bootstrap resampling
+control <- trainControl(method="boot", number=100)
+# Run algorithms using repeated k-fold Cross Validation
+control <- trainControl(method="repeatedcv", number=5, repeats=3)
+# Run algorithms using Leave One Out Cross Validation
+control <- trainControl(method="LOOCV")
+
 # GLMNET
 
 set.seed(seed)
@@ -167,22 +187,22 @@ fit.rf
 print(fit.rf)
 #________________________________________
 
-results <- resamples(list(glmnet=fit.glmnet, svm=fit.svmRadial, knn=fit.knn, cart=fit.cart,fit.nb,fit.c50,
-                          bagging=fit.treebag, rf=fit.rf))
+results <- resamples(list(GLMNET=fit.glmnet, SVM=fit.svmRadial, KNN=fit.knn, CART=fit.cart, Naive_Bayes=fit.nb,C5.0=fit.c50,
+                          Bagged_CART=fit.treebag, Random_Forest=fit.rf))
 results
 # Table comparison
 summary(results)
 
-
 # boxplot comparison
 bwplot(results)
 # Dot-plot comparison
-dotplot(results)
+#dotplot(results)
+
 #_________________________________________________
 # GLMNET
 studentTestPred_glmnet <- predict(fit.glmnet, studentTest)
 confusionMatrix(studentTestPred_glmnet, studentTest$HPI.categories)$overall['Accuracy']
-confusionMatrix(studentTestPred_glmnet, studentTest$HPI.categories)
+confusionMatrix(studentTestPred_glmnet, studentTest$HPI.categories, mode="everything")
 
 xtab = table(studentTestPred_glmnet, studentTest$HPI.categories)
 print(xtab)
@@ -196,10 +216,11 @@ cat(paste("Recall:\t\t", format(recall, digits=2), "\n",sep=" "))
 cat(paste("F-measure:\t", format(f, digits=2), "\n",sep=" "))
 xtab1 = data.frame(accuracy, precision,recall,f )
 xtab1
+
 # SVM Radial
 studentTestPred_svmRadial <- predict(fit.svmRadial, studentTest)
 confusionMatrix(studentTestPred_svmRadial, studentTest$HPI.categories)$overall['Accuracy']
-confusionMatrix(studentTestPred_svmRadial, studentTest$HPI.categories)
+confusionMatrix(studentTestPred_svmRadial, studentTest$HPI.categories, mode="everything")
 
 xtab = table(studentTestPred_svmRadial, studentTest$HPI.categories)
 print(xtab)
@@ -213,10 +234,11 @@ cat(paste("Recall:\t\t", format(recall, digits=2), "\n",sep=" "))
 cat(paste("F-measure:\t", format(f, digits=2), "\n",sep=" "))
 xtab2 = data.frame(accuracy, precision,recall,f )
 xtab2
+
 # kNN
 studentTestPred_knn <- predict(fit.knn, studentTest)
 confusionMatrix(studentTestPred_knn, studentTest$HPI.categories)$overall['Accuracy']
-confusionMatrix(studentTestPred_knn, studentTest$HPI.categories)
+confusionMatrix(studentTestPred_knn, studentTest$HPI.categories, mode="everything")
 
 xtab = table(studentTestPred_knn, studentTest$HPI.categories)
 print(xtab)
@@ -230,10 +252,11 @@ cat(paste("Recall:\t\t", format(recall, digits=2), "\n",sep=" "))
 cat(paste("F-measure:\t", format(f, digits=2), "\n",sep=" "))
 xtab3 = data.frame(accuracy, precision,recall,f )
 xtab3
+
 # Bagged CART
 studentTestPred_treebag <- predict(fit.treebag, studentTest)
 confusionMatrix(studentTestPred_treebag, studentTest$HPI.categories)$overall['Accuracy']
-confusionMatrix(studentTestPred_treebag, studentTest$HPI.categories)
+confusionMatrix(studentTestPred_treebag, studentTest$HPI.categories, mode="everything")
 
 xtab = table(studentTestPred_treebag, studentTest$HPI.categories)
 print(xtab)
@@ -251,7 +274,7 @@ xtab4
 # Random Forest
 studentTestPred_rf <- predict(fit.rf, studentTest)
 confusionMatrix(studentTestPred_rf, studentTest$HPI.categories)$overall['Accuracy']
-confusionMatrix(studentTestPred_rf, studentTest$HPI.categories)
+confusionMatrix(studentTestPred_rf, studentTest$HPI.categories, mode="everything")
 
 xtab = table(studentTestPred_rf, studentTest$HPI.categories)
 print(xtab)
@@ -269,7 +292,7 @@ xtab5
 # CART
 studentTestPred_cart <- predict(fit.cart, studentTest)
 confusionMatrix(studentTestPred_cart, studentTest$HPI.categories)$overall['Accuracy']
-confusionMatrix(studentTestPred_cart, studentTest$HPI.categories)
+confusionMatrix(studentTestPred_cart, studentTest$HPI.categories, mode="everything")
 
 xtab = table(studentTestPred_cart, studentTest$HPI.categories)
 print(xtab)
@@ -287,7 +310,7 @@ xtab6
 # Naive Bayes
 studentTestPred_nb <- predict(fit.nb, studentTest)
 confusionMatrix(studentTestPred_nb, studentTest$HPI.categories)$overall['Accuracy']
-confusionMatrix(studentTestPred_nb, studentTest$HPI.categories)
+confusionMatrix(studentTestPred_nb, studentTest$HPI.categories, mode="everything")
 
 xtab = table(studentTestPred_nb, studentTest$HPI.categories)
 print(xtab)
@@ -301,10 +324,11 @@ cat(paste("Recall:\t\t", format(recall, digits=2), "\n",sep=" "))
 cat(paste("F-measure:\t", format(f, digits=2), "\n",sep=" "))
 xtab7 = data.frame(accuracy, precision,recall,f )
 xtab7
+
 # C5.0
 studentTestPred_c50 <- predict(fit.c50, studentTest)
 confusionMatrix(studentTestPred_c50, studentTest$HPI.categories)$overall['Accuracy']
-confusionMatrix(studentTestPred_c50, studentTest$HPI.categories)
+confusionMatrix(studentTestPred_c50, studentTest$HPI.categories, mode="everything")
 
 xtab = table(studentTestPred_c50, studentTest$HPI.categories)
 print(xtab)
@@ -334,5 +358,25 @@ xtab6
 xtab7
 # C5.0
 xtab8
+#_________________________________________________________________________________________
+# GLMNET
+studentTestPred_glmnet <- predict(fit.glmnet, studentTest)
+confusionMatrix(studentTestPred_glmnet, studentTest$HPI.categories)$overall['Accuracy']
+confusionMatrix(studentTestPred_glmnet, studentTest$HPI.categories, mode="everything")
+
+# C5.0
+studentTestPred_c50 <- predict(fit.c50, studentTest)
+confusionMatrix(studentTestPred_c50, studentTest$HPI.categories)$overall['Accuracy']
+confusionMatrix(studentTestPred_c50, studentTest$HPI.categories, mode="everything")
+
+# Bagged CART
+studentTestPred_treebag <- predict(fit.treebag, studentTest)
+confusionMatrix(studentTestPred_treebag, studentTest$HPI.categories)$overall['Accuracy']
+confusionMatrix(studentTestPred_treebag, studentTest$HPI.categories, mode="everything")
+
+# Random Forest
+studentTestPred_rf <- predict(fit.rf, studentTest)
+confusionMatrix(studentTestPred_rf, studentTest$HPI.categories)$overall['Accuracy']
+confusionMatrix(studentTestPred_rf, studentTest$HPI.categories, mode="everything")
 
 
